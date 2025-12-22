@@ -1,24 +1,33 @@
 from fastmcp import FastMCP
-from tools.doctors import resolve_doctor_id
-from dependencies import dbops
+from tools.doctors import (
+    list_all_doctors_resource, 
+    get_doctor_availability_resource,
+    add_availability_tool,
+    resolve_doctor_id
+)
 
-mcp = FastMCP("CareBot-Operations")
+mcp = FastMCP("CareBot-DBOps-MCP")
 
+# --- Doctors Family Registration ---
+mcp.resource("doctors://list", list_all_doctors_resource)
+mcp.resource("doctors://availability/{doctor_name}/{date}", get_doctor_availability_resource)
+mcp.tool()(add_availability_tool)
+
+# --- JARVIS Pattern: Capability Search ---
 @mcp.tool()
-async def book_appointment(doctor_name: str, patient_name: str, date: str):
-    """Books an appointment using human names instead of IDs."""
-    # 1. Translate Name to ID (Context Enrichment)
-    doc_id = await resolve_doctor_id(doctor_name)
-    
-    if not doc_id:
-        return f"Could not find doctor: {doctor_name}"
+async def search_staff_tools(query: str) -> str:
+    """Dynamically identifies relevant staff/doctor tools based on intent."""
+    catalog = {
+        "check availability": "doctors://availability/{name}/{date}",
+        "list staff": "doctors://list",
+        "update schedule": "add_availability_tool"
+    }
+    # Simple semantic match logic
+    results = [f"Match: {k} -> Use {v}" for k, v in catalog.items() if query.lower() in k]
+    return "\n".join(results) if results else "No specific staff tool matched. Try 'list staff'."
 
-    # 2. Call DBOps (Execution)
-    # Note: You'll need a similar resolve_patient_id function
-    payload = {"doctor_id": doc_id, "appointment_date": date} 
-    await dbops.post("/appointments", payload)
-    
-    return f"Successfully scheduled {patient_name} with {doctor_name}."
+if __name__ == "__main__":
+    mcp.run()
 
 if __name__ == "__main__":
     mcp.run()
