@@ -2,7 +2,9 @@ from fastmcp import Context
 from cachetools import TTLCache, cached
 from dependencies import dbops
 from tools.models import DoctorBase, Availability
+from typing import List, Optional, Dict, Any
 import logging
+import mcp
 
 logger = logging.getLogger("dbops-mcp.doctors")
 
