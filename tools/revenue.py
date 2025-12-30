@@ -2,8 +2,8 @@ from fastmcp import Context
 from dependencies import dbops
 from typing import Optional
 import logging
+from server import mcp
 logger = logging.getLogger("dbops-mcp.revenue")
-mcp = Context("revenue")
 
 
 # --- 1. Comprehensive Revenue (GET /analytics/revenue) ---

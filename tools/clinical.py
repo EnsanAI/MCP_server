@@ -4,8 +4,7 @@ from tools.patients import resolve_patient_id
 from tools.models import SoapNoteCreate, SoapNoteUpdate, TreatmentPlanCreate
 from typing import List, Optional, Dict, Any
 import logging
-import mcp
-import datetime
+from server import mcp
 
 logger = logging.getLogger("dbops-mcp.clinical")
 
@@ -97,9 +96,9 @@ async def create_soap_note(
 
     try:
         await dbops.post(f"/appointments/{appt_id}/soap-notes", data=payload)
-        return f"✅ SOAP Note created for {patient_name} (Appt: {appt_id})."
+        return f" SOAP Note created for {patient_name} (Appt: {appt_id})."
     except Exception as e:
-        return f"❌ Failed to create note: {str(e)}"
+        return f" Failed to create note: {str(e)}"
 
 @mcp.tool()
 async def update_soap_note(
@@ -115,9 +114,9 @@ async def update_soap_note(
     
     try:
         await dbops.put(f"/appointments/{appointment_id}/soap-notes/{note_id}", data=payload)
-        return f"✅ SOAP Note {note_id} updated."
+        return f" SOAP Note {note_id} updated."
     except Exception as e:
-        return f"❌ Update failed: {str(e)}"
+        return f" Update failed: {str(e)}"
 
 @mcp.tool()
 async def version_soap_note(
@@ -133,9 +132,9 @@ async def version_soap_note(
     }
     try:
         await dbops.post(f"/appointments/{appointment_id}/soap-notes/{note_id}/new-version", data=payload)
-        return f"✅ New version created for note {note_id}."
+        return f" New version created for note {note_id}."
     except Exception as e:
-        return f"❌ Versioning failed: {str(e)}"
+        return f" Versioning failed: {str(e)}"
 
 # ==========================================
 # Family 2: Treatment Plans (6 Endpoints)
@@ -199,9 +198,9 @@ async def create_treatment_plan(
 
     try:
         await dbops.post("/treatment-plans", data=payload)
-        return f"✅ Treatment Plan created for {diagnosis}."
+        return f" Treatment Plan created for {diagnosis}."
     except Exception as e:
-        return f"❌ Creation failed: {str(e)}"
+        return f" Creation failed: {str(e)}"
 
 @mcp.tool()
 async def update_treatment_plan(
@@ -213,15 +212,15 @@ async def update_treatment_plan(
     payload = {"status": status, "notes": notes}
     try:
         await dbops.put(f"/treatment-plans/{plan_id}", data=payload)
-        return f"✅ Plan {plan_id} updated to {status}."
+        return f" Plan {plan_id} updated to {status}."
     except Exception as e:
-        return f"❌ Update failed: {str(e)}"
+        return f" Update failed: {str(e)}"
 
 @mcp.tool()
 async def discontinue_treatment_plan(plan_id: str, reason: str) -> str:
     """Tool: Discontinues a plan (e.g., patient recovered)."""
     try:
         await dbops.post(f"/treatment-plans/{plan_id}/discontinue", data={"reason": reason})
-        return f"✅ Plan {plan_id} discontinued."
+        return f" Plan {plan_id} discontinued."
     except Exception as e:
-        return f"❌ Discontinue failed: {str(e)}"
+        return f" Discontinue failed: {str(e)}"

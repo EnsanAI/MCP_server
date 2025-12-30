@@ -4,7 +4,7 @@ from dependencies import dbops
 from tools.models import DoctorBase, Availability
 from typing import List, Optional, Dict, Any
 import logging
-import mcp
+from server import mcp
 
 logger = logging.getLogger("dbops-mcp.doctors")
 
@@ -31,7 +31,7 @@ async def resolve_doctor_id(name: str) -> Optional[str]:
     return None
 
 # --- MCP Resources (GET) ---
-
+@mcp.resource("doctors://list")
 async def list_all_doctors_resource() -> str:
     """Resource: Returns a human-friendly list of all doctors and their titles."""
     data = await _fetch_raw_doctors()
@@ -40,6 +40,7 @@ async def list_all_doctors_resource() -> str:
     lines = [f"- {d.first_name} {d.last_name} ({d.title}) | Languages: {', '.join(d.languages_spoken)}" for d in doctors]
     return "Clinic Staff Registry:\n" + "\n".join(lines)
 
+@mcp.resource("doctors://availability/{doctor_name}/{date}")
 async def get_doctor_availability_resource(doctor_name: str, date: str) -> str:
     """Resource: Returns availability for a doctor on a specific date."""
     doc_id = await resolve_doctor_id(doctor_name)
@@ -56,7 +57,7 @@ async def get_doctor_availability_resource(doctor_name: str, date: str) -> str:
     return f"Availability for {doctor_name} on {date}:\n{avail_str}"
 
 # --- MCP Tools (POST/PATCH) ---
-
+@mcp.tool()
 async def add_availability_tool(
     doctor_name: str, 
     day_of_week: str, 

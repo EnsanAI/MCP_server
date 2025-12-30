@@ -4,7 +4,11 @@ from dependencies import dbops
 from tools.models import Clinic
 from typing import List, Optional
 import logging
-import mcp
+import asyncio
+from server import mcp
+
+logger = logging.getLogger("dbops-mcp.clinics")
+
 # Cache clinic info for 24 hours (very static data)
 clinic_cache = TTLCache(maxsize=10, ttl=86400)
 

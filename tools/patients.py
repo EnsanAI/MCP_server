@@ -3,7 +3,7 @@ from cachetools import TTLCache, cached
 from dependencies import dbops
 from tools.models import PatientBase, PatientCreate
 import logging
-import mcp
+from server import mcp
 from typing import List, Optional, Dict, Any
 
 
@@ -11,7 +11,6 @@ logger = logging.getLogger("dbops-mcp.patients")
 
 # 10-minute cache for patient registry to ensure quick lookups
 patient_cache = TTLCache(maxsize=100, ttl=600)
-
 @cached(patient_cache)
 async def _fetch_raw_patients() -> List[dict]:
     """Internal: Fetches all patients from DBOps."""
@@ -31,7 +30,7 @@ async def resolve_patient_id(name: str) -> Optional[str]:
     return None
 
 # --- MCP Resources (GET) ---
-
+@mcp.resource("patients://appointments/{name}")
 async def get_patient_summary_resource(name: str) -> str:
     """Resource: Returns a patient's medical and reliability summary."""
     patient_id = await resolve_patient_id(name)
@@ -45,6 +44,7 @@ async def get_patient_summary_resource(name: str) -> str:
             f"Medical History: {p.get('medical_history', 'No records')}\n"
             f"Allergies: {', '.join(p.get('allergies', [])) or 'None'}")
 
+@mcp.resource("patients://appointments/{name}")
 async def get_patient_appointments_resource(name: str) -> str:
     """Resource: Fetches all past and upcoming appointments for a patient."""
     patient_id = await resolve_patient_id(name)
@@ -62,6 +62,7 @@ async def get_patient_appointments_resource(name: str) -> str:
 
 # --- MCP Tools (POST) ---
 
+@mcp.tool()
 async def create_patient_tool(
     first_name: str, 
     last_name: str, 

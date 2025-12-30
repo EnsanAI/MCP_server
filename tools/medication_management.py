@@ -1,10 +1,10 @@
 from fastmcp import Context
-import mcp
 from dependencies import dbops
 from tools.patients import resolve_patient_id
 from tools.models import MedicationCreate, MedicationUpdate, MedicationRefill
 from typing import Optional
 import logging
+from server import mcp
 
 logger = logging.getLogger("dbops-mcp.medications")
 
@@ -25,7 +25,6 @@ async def resolve_medication_id(patient_id: str, med_name: str) -> Optional[str]
     return None
 
 # --- MCP Resources (GET) ---
-
 @mcp.resource("medications://all/{patient_name}")
 async def get_all_medications(patient_name: str) -> str:
     """Resource: Returns ALL medications (active and past) for a patient."""
@@ -75,7 +74,6 @@ async def get_medication_statistics(patient_name: str) -> str:
     return f"Medication Stats for {patient_name}:\n{stats}"
 
 # --- MCP Tools (POST/PUT/PATCH) ---
-
 @mcp.tool()
 async def prescribe_medication(
     patient_name: str, 
@@ -100,9 +98,9 @@ async def prescribe_medication(
     try:
         # Endpoint: POST /patients/{patientId}/medications
         await dbops.post(f"/patients/{patient_id}/medications", data=payload)
-        return f"✅ Prescribed {medication_name} to {patient_name}."
+        return f" Prescribed {medication_name} to {patient_name}."
     except Exception as e:
-        return f"❌ Failed to prescribe: {str(e)}"
+        return f" Failed to prescribe: {str(e)}"
 
 @mcp.tool()
 async def update_prescription(

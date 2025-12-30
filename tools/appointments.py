@@ -1,13 +1,15 @@
-from fastmcp import Context, Server
+from fastmcp import Context
 from dependencies import dbops
 from tools.doctors import resolve_doctor_id
 from tools.patients import resolve_patient_id
 from tools.models import AppointmentBase
 import logging
+from server import mcp
+from typing import List, Optional, Dict, Any
+
 
 logger = logging.getLogger("dbops-mcp.appointments")
 
-mcp = Server("appointments")
 
 # --- Helpers ---
 
@@ -16,6 +18,28 @@ async def _get_default_clinic_id():
     clinics = await dbops.get("/clinics")
     return clinics[0]['id'] if clinics else None
 
+async def resolve_last_appointment_id(patient_id: str) -> Optional[str]:
+    """
+    CONTEXT ENRICHMENT: Finds the most recent appointment ID for a patient.
+    Used by pre-visit and clinical tools to link data to the correct visit.
+    """
+    try:
+        # Fetch appointments for this specific patient
+        appointments = await dbops.get(f"/patients/{patient_id}/appointments")
+        if not appointments:
+            return None
+        
+        # Sort by date/time descending to get the latest one
+        # Assuming format is YYYY-MM-DD and HH:MM
+        sorted_appts = sorted(
+            appointments, 
+            key=lambda x: (x['appointment_date'], x['start_time']), 
+            reverse=True
+        )
+        return sorted_appts[0]['id']
+    except Exception as e:
+        logger.error(f"Error resolving last appointment: {e}")
+        return None
 # --- MCP Resources (GET) ---
 
 @mcp.resource("appointments://doctor/{doctor_name}")
@@ -71,9 +95,9 @@ async def book_appointment(
 
     try:
         res = await dbops.post("/appointments", data=payload)
-        return f"✅ Appointment confirmed for {patient_name} with {doctor_name} on {date} at {start_time}."
+        return f" Appointment confirmed for {patient_name} with {doctor_name} on {date} at {start_time}."
     except Exception as e:
-        return f"❌ Failed to book appointment: {str(e)}"
+        return f" Failed to book appointment: {str(e)}"
 
 @mcp.tool()
 async def cancel_appointment(appointment_id: str, reason: str) -> str:
@@ -81,6 +105,6 @@ async def cancel_appointment(appointment_id: str, reason: str) -> str:
     try:
         # Per docs: PATCH /appointments/{id}/cancel
         await dbops.patch(f"/appointments/{appointment_id}/cancel", data={"cancellation_reason": reason})
-        return f"✅ Appointment {appointment_id} has been cancelled."
+        return f" Appointment {appointment_id} has been cancelled."
     except Exception as e:
-        return f"❌ Cancellation failed: {str(e)}"
+        return f" Cancellation failed: {str(e)}"

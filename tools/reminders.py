@@ -4,17 +4,16 @@ from tools.patients import resolve_patient_id
 from tools.models import ReminderBase, MedicationReminderCreate
 from typing import List, Optional, Dict, Any
 import logging
-import mcp
+from server import mcp
 
 
 logger = logging.getLogger("dbops-mcp.reminders")
 
-# --- MCP Resources (GET) ---
-mcp = Context("reminders")
+# --- MCP resources (GET) ---
 
 @mcp.resource("reminders://medication/pending/{patient_name}")
 async def get_pending_med_reminders(patient_name: str) -> str:
-    """Resource: Returns pending medication reminders for a patient."""
+    """resource: Returns pending medication reminders for a patient."""
     patient_id = await resolve_patient_id(patient_name)
     if not patient_id:
         return f"Error: Patient '{patient_name}' not found."
@@ -30,7 +29,7 @@ async def get_pending_med_reminders(patient_name: str) -> str:
 
 @mcp.resource("reminders://adherence/{patient_name}")
 async def get_adherence_stats(patient_name: str) -> str:
-    """Resource: Returns adherence rate and missed dose statistics."""
+    """resource: Returns adherence rate and missed dose statistics."""
     patient_id = await resolve_patient_id(patient_name)
     if not patient_id:
         return f"Error: Patient '{patient_name}' not found."
@@ -73,9 +72,9 @@ async def create_medication_reminder(
     try:
         # Per docs: POST /db/reminders/medication
         res = await dbops.post("/db/reminders/medication", data=payload)
-        return f"✅ {res['message']} created for {patient_name}."
+        return f" {res['message']} created for {patient_name}."
     except Exception as e:
-        return f"❌ Failed to create medication schedule: {str(e)}"
+        return f" Failed to create medication schedule: {str(e)}"
 
 @mcp.tool()
 async def log_medication_taken(reminder_id: str, notes: str = "") -> str:
@@ -83,6 +82,6 @@ async def log_medication_taken(reminder_id: str, notes: str = "") -> str:
     try:
         # Per docs: PATCH /db/reminders/adherence/{id}
         await dbops.patch(f"/db/reminders/adherence/{reminder_id}", data={"taken": True, "notes": notes})
-        return f"✅ Dose logged for reminder {reminder_id}."
+        return f" Dose logged for reminder {reminder_id}."
     except Exception as e:
-        return f"❌ Logging failed: {str(e)}"
+        return f" Logging failed: {str(e)}"
