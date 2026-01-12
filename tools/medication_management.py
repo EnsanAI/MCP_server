@@ -1,6 +1,6 @@
 from fastmcp import Context
 from dependencies import dbops
-from tools.patients import resolve_patient_id
+from tools.patients import resolve_patient_by_phone
 from tools.models import MedicationCreate, MedicationUpdate, MedicationRefill
 from typing import Optional
 import logging
@@ -28,7 +28,7 @@ async def resolve_medication_id(patient_id: str, med_name: str) -> Optional[str]
 @mcp.resource("medications://all/{patient_name}")
 async def get_all_medications(patient_name: str) -> str:
     """Resource: Returns ALL medications (active and past) for a patient."""
-    patient_id = await resolve_patient_id(patient_name)
+    patient_id = await resolve_patient_by_phone(patient_name)
     if not patient_id: return f"Error: Patient '{patient_name}' not found."
 
     # Endpoint: GET /patients/{patientId}/medications
@@ -41,7 +41,7 @@ async def get_all_medications(patient_name: str) -> str:
 @mcp.resource("medications://active/{patient_name}")
 async def get_active_medications(patient_name: str) -> str:
     """Resource: Returns ONLY active medications."""
-    patient_id = await resolve_patient_id(patient_name)
+    patient_id = await resolve_patient_by_phone(patient_name)
     if not patient_id: return f"Error: Patient '{patient_name}' not found."
 
     # Endpoint: GET /patients/{patientId}/medications/active
@@ -54,7 +54,7 @@ async def get_active_medications(patient_name: str) -> str:
 @mcp.resource("medications://history/{patient_name}/{start_date}/{end_date}")
 async def get_medication_history(patient_name: str, start_date: str, end_date: str) -> str:
     """Resource: Returns medication history within a specific date range."""
-    patient_id = await resolve_patient_id(patient_name)
+    patient_id = await resolve_patient_by_phone(patient_name)
     if not patient_id: return f"Error: Patient '{patient_name}' not found."
 
     # Endpoint: GET /patients/{patientId}/medications/history
@@ -66,7 +66,7 @@ async def get_medication_history(patient_name: str, start_date: str, end_date: s
 @mcp.resource("medications://statistics/{patient_name}")
 async def get_medication_statistics(patient_name: str) -> str:
     """Resource: Returns adherence and prescription statistics."""
-    patient_id = await resolve_patient_id(patient_name)
+    patient_id = await resolve_patient_by_phone(patient_name)
     if not patient_id: return f"Error: Patient '{patient_name}' not found."
 
     # Endpoint: GET /patients/{patientId}/medications/statistics
@@ -84,7 +84,7 @@ async def prescribe_medication(
     instructions: str
 ) -> str:
     """Tool: Prescribes a NEW medication to a patient."""
-    patient_id = await resolve_patient_id(patient_name)
+    patient_id = await resolve_patient_by_phone(patient_name)
     if not patient_id: return f"Error: Patient '{patient_name}' not found."
 
     payload = {
@@ -110,7 +110,7 @@ async def update_prescription(
     new_frequency: Optional[str] = None
 ) -> str:
     """Tool: Updates dosage or frequency for an existing medication."""
-    patient_id = await resolve_patient_id(patient_name)
+    patient_id = await resolve_patient_by_phone(patient_name)
     if not patient_id: return f"Error: Patient '{patient_name}' not found."
     
     med_id = await resolve_medication_id(patient_id, medication_name)
@@ -134,7 +134,7 @@ async def discontinue_medication(
     reason: str
 ) -> str:
     """Tool: Stops a medication (Discontinue)."""
-    patient_id = await resolve_patient_id(patient_name)
+    patient_id = await resolve_patient_by_phone(patient_name)
     if not patient_id: return f"Error: Patient '{patient_name}' not found."
 
     med_id = await resolve_medication_id(patient_id, medication_name)
@@ -156,7 +156,7 @@ async def add_medication_refill(
     pharmacy: str
 ) -> str:
     """Tool: Logs a refill for a specific medication."""
-    patient_id = await resolve_patient_id(patient_name)
+    patient_id = await resolve_patient_by_phone(patient_name)
     if not patient_id: return f"Error: Patient '{patient_name}' not found."
 
     med_id = await resolve_medication_id(patient_id, medication_name)

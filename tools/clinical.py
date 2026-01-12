@@ -1,6 +1,6 @@
 from fastmcp import Context
 from dependencies import dbops
-from tools.patients import resolve_patient_id
+from tools.patients import resolve_patient_by_phone
 from tools.models import SoapNoteCreate, SoapNoteUpdate, TreatmentPlanCreate
 from typing import List, Optional, Dict, Any
 import logging
@@ -15,7 +15,7 @@ async def resolve_last_appointment_id(patient_name: str) -> Optional[str]:
     Context Enrichment: Finds the most recent appointment UUID for a patient.
     Essential for 'Add note to John's appointment' commands.
     """
-    patient_id = await resolve_patient_id(patient_name)
+    patient_id = await resolve_patient_by_phone(patient_name)
     if not patient_id: return None
     
     # Fetch all appointments and sort by date/time
@@ -145,7 +145,7 @@ async def version_soap_note(
 @mcp.resource("clinical://plans/active/{patient_name}")
 async def get_active_treatment_plans(patient_name: str) -> str:
     """Resource: Get all ACTIVE treatment plans for a patient."""
-    pat_id = await resolve_patient_id(patient_name)
+    pat_id = await resolve_patient_by_phone(patient_name)
     if not pat_id: return f"Error: Patient '{patient_name}' not found."
 
     plans = await dbops.get(f"/treatment-plans/patient/{pat_id}", params={"status": "active"})
@@ -156,7 +156,7 @@ async def get_active_treatment_plans(patient_name: str) -> str:
 @mcp.resource("clinical://plans/history/{patient_name}")
 async def get_treatment_plan_history(patient_name: str) -> str:
     """Resource: Get full history of treatment plans."""
-    pat_id = await resolve_patient_id(patient_name)
+    pat_id = await resolve_patient_by_phone(patient_name)
     if not pat_id: return f"Error: Patient '{patient_name}' not found."
 
     return await dbops.get(f"/treatment-plans/patient/{pat_id}/history")
@@ -179,7 +179,7 @@ async def create_treatment_plan(
     Tool: Creates a new treatment plan with initial interventions.
     Automatically links to patient's last appointment.
     """
-    pat_id = await resolve_patient_id(patient_name)
+    pat_id = await resolve_patient_by_phone(patient_name)
     appt_id = await resolve_last_appointment_id(patient_name)
     
     if not pat_id or not appt_id:

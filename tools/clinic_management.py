@@ -13,7 +13,6 @@ logger = logging.getLogger("dbops-mcp.clinics")
 clinic_cache = TTLCache(maxsize=10, ttl=86400)
 
 @mcp.resource("clinics://all")
-@cached(clinic_cache)
 async def get_all_clinics_resource() -> str:
     """Resource: List all clinics in the network."""
     data = await dbops.get("/clinics")

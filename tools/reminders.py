@@ -1,6 +1,6 @@
 from fastmcp import Context
 from dependencies import dbops
-from tools.patients import resolve_patient_id
+from tools.patients import resolve_patient_by_phone
 from tools.models import ReminderBase, MedicationReminderCreate
 from typing import List, Optional, Dict, Any
 import logging
@@ -14,7 +14,7 @@ logger = logging.getLogger("dbops-mcp.reminders")
 @mcp.resource("reminders://medication/pending/{patient_name}")
 async def get_pending_med_reminders(patient_name: str) -> str:
     """resource: Returns pending medication reminders for a patient."""
-    patient_id = await resolve_patient_id(patient_name)
+    patient_id = await resolve_patient_by_phone(patient_name)
     if not patient_id:
         return f"Error: Patient '{patient_name}' not found."
 
@@ -30,7 +30,7 @@ async def get_pending_med_reminders(patient_name: str) -> str:
 @mcp.resource("reminders://adherence/{patient_name}")
 async def get_adherence_stats(patient_name: str) -> str:
     """resource: Returns adherence rate and missed dose statistics."""
-    patient_id = await resolve_patient_id(patient_name)
+    patient_id = await resolve_patient_by_phone(patient_name)
     if not patient_id:
         return f"Error: Patient '{patient_name}' not found."
 
@@ -55,7 +55,7 @@ async def create_medication_reminder(
     Tool: Sets up a recurring medication schedule.
     Example: 'Remind John Doe to take Metformin 500mg twice daily until 2026-01-01'
     """
-    patient_id = await resolve_patient_id(patient_name)
+    patient_id = await resolve_patient_by_phone(patient_name)
     if not patient_id:
         return f"Error: Patient '{patient_name}' not found."
 

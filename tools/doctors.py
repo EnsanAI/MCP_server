@@ -11,7 +11,6 @@ logger = logging.getLogger("dbops-mcp.doctors")
 # 2-hour cache for the full staff registry
 doctors_cache = TTLCache(maxsize=1, ttl=7200)
 
-@cached(doctors_cache)
 async def _fetch_raw_doctors() -> List[dict]:
     """Internal: Raw API call to get all doctors."""
     return await dbops.get("/doctors")

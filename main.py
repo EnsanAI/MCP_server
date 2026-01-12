@@ -21,6 +21,13 @@ import tools.revenue
 import tools.clinical
 import tools.previsit
 import tools.clinic_management
+import tools.emergency
+import tools.insurance
+import tools.inquiries
+import tools.waitlist
+import tools.procedures
+import tools.communication
+import tools.users
 
 # --- System & Diagnostics (New) ---
 

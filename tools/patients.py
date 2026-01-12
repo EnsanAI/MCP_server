@@ -16,24 +16,37 @@ async def _fetch_raw_patients() -> List[dict]:
     """Internal: Fetches all patients from DBOps."""
     return await dbops.get("/patients")
 
-async def resolve_patient_id(name: str) -> Optional[str]:
+@mcp.tool()
+async def resolve_patient_by_phone(phone_number: str) -> str:
     """
-    CONTEXT ENRICHMENT: Translates 'John Doe' -> UUID.
+    Tool: Smart Patient Lookup. Finds a patient ID using a phone number. 
+    Automatically tries variations (e.g. +971, missing 0) to handle formatting issues.
     """
-    raw_data = await _fetch_raw_patients()
-    search_name = name.lower().strip()
+    # 1. Clean & Generate Variations (Ported from Client)
+    clean = ''.join(filter(str.isdigit, phone_number))
+    variations = [phone_number, clean, f"+{clean}"]
     
-    for p in raw_data:
-        full_name = f"{p.get('first_name', p.get('firstName', ''))} {p.get('last_name', p.get('lastName', ''))}".lower()
-        if search_name in full_name:
-            return p['id']
-    return None
+    if clean.startswith('0'): 
+        variations.append(clean[1:]) # Remove leading 0
+    if not clean.startswith('971') and len(clean) >= 9:
+        variations.append(f"971{clean}") # Add UAE code
+
+    # 2. Try Lookup
+    for var in variations:
+        try:
+            res = await dbops.get(f"/patients/by-phone/{var}")
+            if res and res.get('id'):
+                return f"Found: {res.get('first_name')} (ID: {res.get('id')})"
+        except:
+            continue
+            
+    return f"Patient not found for number: {phone_number}"
 
 # --- MCP Resources (GET) ---
 @mcp.resource("patients://appointments/{name}")
 async def get_patient_summary_resource(name: str) -> str:
     """Resource: Returns a patient's medical and reliability summary."""
-    patient_id = await resolve_patient_id(name)
+    patient_id = await resolve_patient_by_phone(name)
     if not patient_id:
         return f"Error: Patient '{name}' not found."
 
@@ -47,7 +60,7 @@ async def get_patient_summary_resource(name: str) -> str:
 @mcp.resource("patients://appointments/{name}")
 async def get_patient_appointments_resource(name: str) -> str:
     """Resource: Fetches all past and upcoming appointments for a patient."""
-    patient_id = await resolve_patient_id(name)
+    patient_id = await resolve_patient_by_phone(name)
     if not patient_id:
         return f"Error: Patient '{name}' not found."
 
