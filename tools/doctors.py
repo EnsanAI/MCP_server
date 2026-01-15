@@ -30,14 +30,18 @@ async def resolve_doctor_id(name: str) -> Optional[str]:
     return None
 
 # --- MCP Resources (GET) ---
-@mcp.resource("doctors://list")
-async def list_all_doctors_resource() -> str:
-    """Resource: Returns a human-friendly list of all doctors and their titles."""
+async def _get_doctors_list_logic() -> str:
+    """Internal logic helper to avoid calling decorated objects."""
     data = await _fetch_raw_doctors()
     doctors = [DoctorBase(**d) for d in data]
     
     lines = [f"- {d.first_name} {d.last_name} ({d.title}) | Languages: {', '.join(d.languages_spoken)}" for d in doctors]
     return "Clinic Staff Registry:\n" + "\n".join(lines)
+
+@mcp.resource("doctors://list")
+async def list_all_doctors_resource() -> str:
+    """Resource: Returns a human-friendly list of all doctors and their titles."""
+    return await _get_doctors_list_logic()
 
 @mcp.resource("doctors://availability/{doctor_name}/{date}")
 async def get_doctor_availability_resource(doctor_name: str, date: str) -> str:
@@ -54,6 +58,12 @@ async def get_doctor_availability_resource(doctor_name: str, date: str) -> str:
     
     avail_str = "\n".join([f"• {s.start_time} - {s.end_time}: {'Available' if s.is_available else 'Booked'}" for s in slots])
     return f"Availability for {doctor_name} on {date}:\n{avail_str}"
+
+# --- MCP Tools (GET) ---
+@mcp.tool()
+async def get_doctors() -> str:
+    """Tool: Lists all doctors. Alias for doctors://list resource."""
+    return await _get_doctors_list_logic()
 
 # --- MCP Tools (POST/PATCH) ---
 @mcp.tool()

@@ -1,7 +1,7 @@
 from fastmcp import Context
 from dependencies import dbops
 from tools.doctors import resolve_doctor_id
-from tools.patients import resolve_patient_by_phone
+from tools.patients import _resolve_patient_logic
 from tools.models import AppointmentBase
 import logging
 from server import mcp
@@ -76,7 +76,12 @@ async def book_appointment(
     """
     # 1. Context Enrichment: Resolve both IDs in parallel
     doc_id = await resolve_doctor_id(doctor_name)
-    pat_id = await resolve_patient_by_phone(patient_name)
+    
+    pat_res = await _resolve_patient_logic(patient_name)
+    pat_id = None
+    if "Found:" in pat_res:
+        pat_id = pat_res.split("ID: ")[1].rstrip(")")
+        
     clinic_id = await _get_default_clinic_id()
 
     if not doc_id or not pat_id:

@@ -15,7 +15,7 @@ class DBOpsClient:
         self.headers = {
             "Authorization": f"Bearer {self.token}",
             "Content-Type": "application/json",
-            "Connection": "keep-alive" # Hint to keep the socket open
+            "Connection": "keep-alive" 
         }
         
         # 2. Optimized Client (Shared across all requests)

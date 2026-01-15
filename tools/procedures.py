@@ -1,5 +1,9 @@
 from server import mcp
 from dependencies import dbops
+import logging
+from typing import Optional, List, Dict, Any
+
+logger = logging.getLogger("dbops-mcp.procedures")
 
 @mcp.tool()
 async def get_procedure_guidelines(procedure_name: str) -> str:
@@ -18,3 +22,25 @@ async def search_procedures(name: str) -> str:
         return str(data)
     except Exception as e:
         return f"Search failed: {e}"
+
+@mcp.tool()
+async def list_procedures() -> str:
+    """Tool: Lists all available medical procedures."""
+    try:
+        data = await dbops.get("/procedures")
+        if isinstance(data, list):
+             lines = [f"• {p.get('name', 'Unknown')} (ID: {p.get('id', 'N/A')})" for p in data]
+             return "Available Procedures:\n" + "\n".join(lines)
+        return str(data)
+    except Exception as e:
+        return f"Failed to list procedures: {e}"
+
+@mcp.tool()
+async def get_all_dental_procedures() -> str:
+    """Gets a list of all available dental procedures with pricing information."""
+    logger.info("Fetching all dental procedures.")
+    try:
+        data = await dbops.get("/procedures")
+        return str(data)
+    except Exception as e:
+        return f"Failed to fetch dental procedures: {str(e)}"

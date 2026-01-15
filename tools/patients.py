@@ -16,12 +16,8 @@ async def _fetch_raw_patients() -> List[dict]:
     """Internal: Fetches all patients from DBOps."""
     return await dbops.get("/patients")
 
-@mcp.tool()
-async def resolve_patient_by_phone(phone_number: str) -> str:
-    """
-    Tool: Smart Patient Lookup. Finds a patient ID using a phone number. 
-    Automatically tries variations (e.g. +971, missing 0) to handle formatting issues.
-    """
+async def _resolve_patient_logic(phone_number: str) -> str:
+    """Internal logic helper for patient lookup."""
     # 1. Clean & Generate Variations (Ported from Client)
     clean = ''.join(filter(str.isdigit, phone_number))
     variations = [phone_number, clean, f"+{clean}"]
@@ -42,14 +38,23 @@ async def resolve_patient_by_phone(phone_number: str) -> str:
             
     return f"Patient not found for number: {phone_number}"
 
+@mcp.tool()
+async def resolve_patient_by_phone(phone_number: str) -> str:
+    """
+    Tool: Smart Patient Lookup. Finds a patient ID using a phone number. 
+    Automatically tries variations (e.g. +971, missing 0) to handle formatting issues.
+    """
+    return await _resolve_patient_logic(phone_number)
+
 # --- MCP Resources (GET) ---
 @mcp.resource("patients://appointments/{name}")
 async def get_patient_summary_resource(name: str) -> str:
     """Resource: Returns a patient's medical and reliability summary."""
-    patient_id = await resolve_patient_by_phone(name)
-    if not patient_id:
+    res_text = await _resolve_patient_logic(name)
+    if "Found:" not in res_text:
         return f"Error: Patient '{name}' not found."
-
+    
+    patient_id = res_text.split("ID: ")[1].rstrip(")")
     p = await dbops.get(f"/patients/{patient_id}")
     
     return (f"Patient: {p.get('first_name')} {p.get('last_name')}\n"
@@ -60,11 +65,11 @@ async def get_patient_summary_resource(name: str) -> str:
 @mcp.resource("patients://appointments/{name}")
 async def get_patient_appointments_resource(name: str) -> str:
     """Resource: Fetches all past and upcoming appointments for a patient."""
-    patient_id = await resolve_patient_by_phone(name)
-    if not patient_id:
+    res_text = await _resolve_patient_logic(name)
+    if "Found:" not in res_text:
         return f"Error: Patient '{name}' not found."
-
-    # Per docs: GET /patients/{id}/appointments
+    
+    patient_id = res_text.split("ID: ")[1].rstrip(")")
     appointments = await dbops.get(f"/patients/{patient_id}/appointments")
     
     if not appointments:
