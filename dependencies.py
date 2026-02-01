@@ -55,6 +55,16 @@ class DBOpsClient:
         res.raise_for_status()
         return res.json()
 
+    async def patch(self, endpoint: str, data: dict):
+        """PATCH request to DBOps API for partial updates."""
+        try:
+            res = await self._client.patch(endpoint, json=data)
+            res.raise_for_status()
+            return res.json()
+        except httpx.HTTPStatusError as e:
+            logger.error(f"DBOps PATCH Error: {e.response.status_code} at {endpoint}")
+            raise
+
     async def close(self):
         """Gracefully shut down the connection pool."""
         await self._client.aclose()

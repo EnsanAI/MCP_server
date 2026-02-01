@@ -43,32 +43,96 @@ ADMIN_ACCESS_TOKEN=your_persistent_admin_token
 
 ### 2. Docker Deployment
 
-The server is designed to run in a containerized environment to ensure parity with DBOps:
+#### Option A: Standalone Docker Container
 
-```powershell
+The server can run as a standalone container:
+
+```bash
 docker build -t mcp_server .
 
-docker run -d `
-  --name mcp_server `
-  -p 8000:8000 `
-  -v ${PWD}:/app `
-  --env-file .env `
+docker run -d \
+  --name mcp_server \
+  -p 8000:8000 \
+  -v ${PWD}:/app \
+  --env-file .env \
   mcp_server
 ```
 
-## Verification & Latency Testing
+#### Option B: Docker Compose (Recommended)
 
-Verify the SSE stream and internal latency using Bash:
+The MCP server is integrated into the main CareBot docker-compose.local.yml file. To run it with all other services:
 
 ```bash
-# Verify SSE Pipe
-time curl -s http://localhost:8000/sse
+# From the carebot_dev root directory
+docker-compose -f docker-compose.local.yml up -d mcp-server
+
+# Or to start all services including MCP
+docker-compose -f docker-compose.local.yml up -d
+```
+
+The service will be available at:
+- **Local**: http://localhost:8003
+- **Container network**: http://mcp-server:8000
+
+**Environment Variables** (set in docker-compose.local.yml):
+- `DB_OPS_URL`: URL to the db-ops service (default: http://db-ops:3000)
+- `ADMIN_ACCESS_TOKEN`: Admin token for DBOps authentication
+- `MCP_MODE`: Transport mode (set to "sse" for Server-Sent Events)
+- `PORT`: Internal port (8000)
+- `HOST`: Bind address (0.0.0.0)
+
+## Testing
+
+### Automated Test Suite
+
+A comprehensive test suite is provided to verify MCP tools against the db-ops service:
+
+```bash
+# From the MCP_server directory
+./test-mcp.sh
+```
+
+The test script will:
+1. Check if MCP server is running (starts it if needed)
+2. Verify db-ops connectivity
+3. Test all MCP tool categories:
+   - Patient tools (resolution, details, appointments)
+   - Doctor tools (resolution, details, availability)
+   - Appointment tools
+   - Clinic tools
+   - Medication tools
+4. Provide colored output with pass/fail/warning status
+5. Generate a test summary with success rate
+
+**Manual Testing from Container:**
+
+```bash
+# Run tests directly inside the container
+docker exec -it carebot-mcp-server-local python /app/Test/test_mcp_docker.py
+```
+
+### Verification & Latency Testing
+
+Verify the SSE stream and internal latency:
+
+```bash
+# Verify SSE Pipe (from host)
+time curl -s http://localhost:8003/sse
+
+# From inside the container network
+docker exec carebot-mcp-server-local curl -s http://localhost:8000/sse
 
 # Run System Health Check
-curl -X POST http://localhost:8000/messages/?session_id=YOUR_ID \
+curl -X POST http://localhost:8003/messages/?session_id=test_session \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc": "2.0", "id": 1, "method": "tools/call", "params": {"name": "check_system_health", "arguments": {}}}'
 ```
+
+### Test Environment Variables
+
+The test suite uses these environment variables (automatically configured in docker-compose):
+- `DB_OPS_URL`: http://db-ops:3000
+- `ADMIN_ACCESS_TOKEN`: Retrieved from environment or defaults to local_test_admin_token
 
 ## Internal Architecture: Circular Dependency Fix
 

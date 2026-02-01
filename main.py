@@ -57,13 +57,13 @@ async def search_staff_tools(query: str) -> str:
         "prescribe": "prescribe_medication",
         "revenue": "analytics://revenue/comprehensive/..."
     }
-    
+
     query_lower = query.lower()
     results = [f"Match: '{k}' -> Use Tool/Resource: {v}" for k, v in catalog.items() if k in query_lower]
-    
+
     if not results:
         return "No direct match found. Try listing tools via the standard menu."
-    
+
     return "\n".join(results)
 
 # --- Entry Point ---
